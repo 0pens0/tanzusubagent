@@ -1,12 +1,12 @@
 applications:
-- name: tanzubot
-  path: apps/tanzubot
+- name: tanzudispatcher
+  path: apps/tanzudispatcher
   memory: 1024M
   buildpacks:
   - python_buildpack
   - agent_buildpack
   env:
-    AGENT_ID: tanzubot
+    AGENT_ID: tanzudispatcher
     SKILL_RUNNER_MCP_PORT: "8765"
     TANZU_AGENT_ENABLE_DEBUG_UI: "true"
   services:

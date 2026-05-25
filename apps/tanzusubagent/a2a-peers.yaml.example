@@ -1,5 +1,6 @@
 # Copy to a2a-peers.yaml (gitignored) and set your apps domain after cf push.
-# cf app tanzubot | grep routes
 peers:
+  - alias: tanzudispatcher
+    url: https://tanzudispatcher.apps.tp.penso.io
   - alias: tanzubot
     url: https://tanzubot.apps.tp.penso.io

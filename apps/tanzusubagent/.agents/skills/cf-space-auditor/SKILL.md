@@ -26,7 +26,7 @@ This skill performs a **compliance audit** using exactly three criteria. Do NOT 
 
 **This skill triggers when:** User says "audit" + space name, OR asks to check compliance/standards.
 
-**On tanzusubagent:** Inbound A2A from **tanzubot** uses **`a2a-worker`**; reply via `call_a2a_peer(alias="tanzubot", ...)`. Requires CF MCP on this app.
+**On tanzusubagent:** Inbound A2A uses **`a2a-worker`**; reply via `call_a2a_peer(alias=<from>, ...)` using the inbound caller alias. Requires CF MCP on this app.
 
 ## Prerequisites
 

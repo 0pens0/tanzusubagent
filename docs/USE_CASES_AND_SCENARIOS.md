@@ -1,175 +1,90 @@
 # Use cases and scenarios
 
-Tanzubot (`tanzubot`) and **tanzusubagent** (`tanzusubagent`) form an orchestrator/worker pair on Tanzu Platform Elastic Application Runtime. Communication uses native Agent Buildpack A2A (`list_a2a_peers`, `call_a2a_peer`) plus SkillRunner for Python skill scripts on the worker.
+## Mesh roles
 
-## Roles
-
-| App | Role | Talks to |
+| App | Entry | A2A peers |
 | --- | --- | --- |
-| `tanzubot` | User-facing PSE orchestrator; delegates specialist work | Humans, `tanzusubagent` |
-| `tanzusubagent` | Worker; runs skills (scripts + MCP when bound) | `tanzubot` (A2A), optional direct humans |
+| `tanzubot` | Human users | `tanzudispatcher`, `tanzusubagent` |
+| `tanzudispatcher` | A2A from tanzubot only | `tanzusubagent` |
+| `tanzusubagent` | A2A from tanzubot or tanzudispatcher; optional direct UI | `tanzudispatcher`, `tanzubot` |
 
-## Scenario 1 - Tanzu Network version lookup (script skill)
+## Scenario 1 - Direct: Tanzu Network (one hop)
 
-**Actor:** Solutions Engineer in Tanzubot chat
+**User on tanzubot:**
 
-**User prompt (tanzubot):**
+> List latest `cf` product versions on Tanzu Network.
 
-> What are the latest published versions of the `cf` product on Tanzu Network?
+**Flow:** tanzubot -> `call_a2a_peer(tanzusubagent, ...)` -> `tanzu-network-release` script -> reply to `tanzubot`.
 
-**Expected flow:**
+## Scenario 2 - Routed: same task via dispatcher
 
-1. Tanzubot recognizes this needs live Network API data (not in model weights).
-2. Tanzubot uses `a2a-delegate` -> `call_a2a_peer(alias="tanzusubagent", message="Follow your tanzu-network-release skill ... product cf --list-versions ...")`.
-3. tanzusubagent receives `[A2A inbound]`, runs `a2a-worker` -> `run_skill_script` for `pivnet_release.py`.
-4. tanzusubagent replies with `TOOL USED` / `RESULT` / `SUMMARY`.
-5. Tanzubot summarizes for the user and optionally shows raw JSON.
+**User on tanzubot:**
 
-**Success criteria:** JSON in `RESULT` contains `ok: true` and a `versions` list; user sees accurate slugs/versions.
+> Ask tanzudispatcher to have tanzusubagent list `cf` product versions; return raw JSON.
 
-**Failure modes:**
+**Flow:** tanzubot -> `tanzudispatcher` -> `tanzusubagent` -> reply to `tanzudispatcher` -> reply to `tanzubot`.
 
-| Symptom | Likely cause | Mitigation |
-| --- | --- | --- |
-| TLS / certificate errors | Corporate inspection on cell egress | `--insecure` in lab only (skill doc) |
-| Peer not found | `a2a-peers.yaml` missing or wrong URL | Copy `.example`, `cf push`, verify routes |
-| Empty versions | Wrong product slug | User corrects slug; retry |
+## Scenario 3 - CF audit via local MCP on tanzubot
 
-## Scenario 2 - CF space compliance audit (MCP skill)
-
-**Actor:** Platform operator
-
-**User prompt (tanzubot):**
-
-> Audit org `demo` space `tanzubot` for memory and instance compliance.
-
-**Expected flow:**
-
-1. Tanzubot delegates to tanzusubagent with `cf-space-auditor` named in the message.
-2. tanzusubagent runs audit via **Cloud Foundry MCP** (must be bound on the worker app for production; demo may use shared MCP CUPS).
-3. Structured reply returns app-level violations (memory != 1024M Java / 512M non-Java, instances > 1, stale deploys).
-
-**Success criteria:** Report lists only the three audit dimensions; no extra "health check" noise.
-
-**Prerequisites:**
-
-- CF MCP reachable from tanzusubagent (service binding or gateway).
-- Org/space names exact.
-
-**Demo prompt (direct on worker UI):**
+**User on tanzubot:**
 
 > Audit org demo space tanzubot for compliance.
 
-Same skill; no A2A hop (human -> tanzusubagent directly).
+**Flow:** tanzubot uses **local** `tanzubot-tanzu` MCP (no A2A) unless CF MCP is bound only on tanzusubagent.
 
-## Scenario 3 - SkillRunner smoke test (platform verify)
+## Scenario 4 - CF audit via worker
 
-**Actor:** You, after `cf push` both apps
+**User on tanzubot:**
 
-**User prompt (tanzubot):**
+> Use tanzusubagent to audit org demo space tanzubot per cf-space-auditor.
 
-> Ask tanzusubagent to run the python-script-smoke skill and show me the raw output.
+**Flow:** tanzubot -> tanzusubagent (direct or via dispatcher); worker needs CF MCP binding.
 
-**Expected flow:** A2A delegate -> `run_skill_script` -> stdout `{"ok": true, ...}`.
+## Scenario 5 - Smoke test
 
-**Success criteria:** `exit_code: 0` in SkillRunner response; Tanzubot debug UI shows MCP connected on both apps.
+**User on tanzubot:**
 
-## Scenario 4 - Discover worker capabilities
+> Ask tanzusubagent to run python-script-smoke and show raw output.
 
-**Actor:** Tanzubot before delegating an unfamiliar task
+## Scenario 6 - Dispatcher-only routing
 
-**User prompt (tanzubot):**
+**Inbound on tanzudispatcher** from tanzubot with skill named in message; dispatcher forwards unchanged to tanzusubagent; passes worker reply back to tanzubot.
 
-> What skills and tools does tanzusubagent support?
+## Scenario 7 - Local expertise (no A2A)
 
-**Expected flow:** `call_a2a_peer` with a discovery message; worker lists skills from `.agents/skills` and MCP tools.
+**User on tanzubot:** architecture / best-practice questions -> tanzubot answers; no peer call.
 
-**Use when:** Adding new skills without updating Tanzubot `AGENTS.md` immediately.
+## Deploy checklist
 
-## Scenario 5 - Operator bypass (worker UI only)
-
-**Actor:** Engineer debugging the worker
-
-**User prompt (on tanzusubagent chat):**
-
-> Use tanzu-network-release to fetch metadata for elastic-runtime version 10.3.0.
-
-**Expected flow:** Local `run_skill_script` only; **no** `call_a2a_peer` to tanzubot.
-
-**Use when:** Isolating worker issues vs A2A routing.
-
-## Scenario 6 - Delegation declined (orchestrator keeps the task)
-
-**User prompt (tanzubot):**
-
-> Explain when to use Diego cells vs Kubernetes nodes for batch workloads.
-
-**Expected flow:** Tanzubot answers from expertise; **no** A2A call (no live platform query).
-
-## Scenario 7 - Missing capability
-
-**User prompt (tanzubot):**
-
-> Run a BOSH errand on deployment `cf` via tanzusubagent.
-
-**Expected flow (today):** tanzusubagent returns `NO TOOL AVAILABLE` (BOSH worker not implemented yet). Tanzubot explains gap and roadmap item.
-
-**Future:** Add `tanzu-bosh-worker` peer or extend tanzusubagent skills.
-
-## Conversation patterns (copy-paste)
-
-**Tanzubot -> tanzusubagent (Network):**
-
-```text
-Follow your tanzu-network-release skill to list versions for product elastic-runtime and return the raw JSON without summarising.
-```
-
-**Tanzubot -> tanzusubagent (audit):**
-
-```text
-Follow your cf-space-auditor skill to audit org demo space tanzubot. Return the full audit report as RESULT without summarising.
-```
-
-**tanzusubagent -> tanzubot (success template):**
-
-```text
-TOOL USED: tanzu-network-release
-RESULT:
-{"ok":true,"product":"cf","versions":[...]}
-SUMMARY:
-Listed cf product versions from Tanzu Network API.
-```
-
-## Deploy checklist (demo foundation)
+**tanzusubagent repo:**
 
 ```bash
+cf target -o demo -s tanzubot
 bash scripts/setup_mcp_binding.sh
 bash scripts/sync_shared.sh
-cp apps/tanzubot/a2a-peers.yaml.example apps/tanzubot/a2a-peers.yaml
+cp apps/tanzudispatcher/a2a-peers.yaml.example apps/tanzudispatcher/a2a-peers.yaml
 cp apps/tanzusubagent/a2a-peers.yaml.example apps/tanzusubagent/a2a-peers.yaml
-# Edit URLs if domain differs from apps.tp.penso.io
-cf target -o demo -s tanzubot   # or your target space
 cf push -f manifest.yml
 ```
 
-**Naming note:** If a standalone `tanzubot` app already exists in the space, `cf push` updates that app when names collide. Plan route and binding changes accordingly.
+**tanzubot repo:**
 
-## Verify A2A wiring
+```bash
+cp a2a-peers.yaml.example a2a-peers.yaml
+cf restage tanzubot
+```
+
+## Verify
 
 ```bash
 cf app tanzubot | grep routes
+cf app tanzudispatcher | grep routes
 cf app tanzusubagent | grep routes
-# Debug UI on tanzubot: peer tanzusubagent listed under A2A PEERS
-# Prompt: "Ask tanzusubagent to run python-script-smoke and return raw output"
 ```
 
-## Roadmap scenarios (not implemented)
+On tanzubot debug UI: peers `tanzudispatcher` and `tanzusubagent` listed.
 
-| Scenario | Planned peer / skill |
-| --- | --- |
-| Hub portfolio assessment | `tanzu-hub-worker` or Hub MCP on worker |
-| BOSH deployment health | `tanzu-bosh-worker` |
-| Postgres / pgvector memory | Bind `tanzumem` on orchestrator only |
-| Parallel audits (multi-space) | Multiple `call_a2a_peer` rounds or future workers |
+Prompts:
 
-See [ROADMAP.md](ROADMAP.md) for phase tracking.
+- Direct smoke: "Ask tanzusubagent to run python-script-smoke and return raw output."
+- Routed: "Send tanzudispatcher a request to run python-script-smoke on tanzusubagent and return the raw output."
