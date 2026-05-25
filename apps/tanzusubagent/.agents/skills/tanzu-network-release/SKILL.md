@@ -1,6 +1,6 @@
 ---
 name: tanzu-network-release
-description: Tanzu Network public API — list versions or release metadata (JSON). Use via run_skill_script or inbound A2A delegate from agent-a2a-alpha.
+description: Tanzu Network public API — list versions or release metadata (JSON). Use via run_skill_script or inbound A2A delegate from tanzubot.
 ---
 
 # When to use
@@ -47,9 +47,9 @@ If HTTPS fails with certificate errors (corporate TLS inspection), use **`--inse
    `args=["--product","cf","--list-versions"]` or with `--version`, `10.12.0` (exact string from the network).
    Add `"--insecure"` to `args` only if TLS verification fails in a known-inspected environment.
 
-# A2A inbound (from agent-a2a-alpha)
+# A2A inbound (from tanzubot)
 
-When **`[A2A inbound]`** carries a generic task, use **`a2a-worker`**: same `run_skill_script` call, then reply via `call_a2a_peer(alias="alpha", message="<structured result>")`. Alpha sends a plain-text instruction naming this skill (see **`a2a-requester`** on alpha).
+When **`[A2A inbound]`** carries a generic task, use **`a2a-worker`**: same `run_skill_script` call, then reply via `call_a2a_peer(alias="tanzubot", message="<structured result>")`. Tanzubot sends a plain-text instruction naming this skill (see **`a2a-delegate`** on tanzubot).
 
 # Output
 

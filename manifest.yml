@@ -1,12 +1,12 @@
 applications:
-- name: agent-a2a-alpha
-  path: apps/agent-a2a-alpha
+- name: tanzubot
+  path: apps/tanzubot
   memory: 1024M
   buildpacks:
   - python_buildpack
   - agent_buildpack
   env:
-    AGENT_ID: agent-a2a-alpha
+    AGENT_ID: tanzubot
     SKILL_RUNNER_MCP_PORT: "8765"
     TANZU_AGENT_ENABLE_DEBUG_UI: "true"
   services:
@@ -18,14 +18,14 @@ applications:
     command: bash /home/vcap/app/skill_runner/start_sidecar.sh
     memory: 128M
 
-- name: agent-a2a-beta
-  path: apps/agent-a2a-beta
+- name: tanzusubagent
+  path: apps/tanzusubagent
   memory: 1024M
   buildpacks:
   - python_buildpack
   - agent_buildpack
   env:
-    AGENT_ID: agent-a2a-beta
+    AGENT_ID: tanzusubagent
     SKILL_RUNNER_MCP_PORT: "8765"
     TANZU_AGENT_ENABLE_DEBUG_UI: "true"
   services:

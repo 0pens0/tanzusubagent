@@ -5,7 +5,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL_RUNNER_SRC="$(cd "${ROOT}/../cf-agent-skill-script/skill_runner" && pwd)"
-APPS=(agent-a2a-alpha agent-a2a-beta)
+APPS=(tanzubot tanzusubagent)
 
 if [[ ! -d "${SKILL_RUNNER_SRC}" ]]; then
   echo "error: skill_runner source not found at ${SKILL_RUNNER_SRC}" >&2
