@@ -81,13 +81,16 @@ cf push -f manifest.yml agent-a2a-alpha
 cf push -f manifest.yml agent-a2a-beta
 ```
 
-**Update peer URLs** in each app's `a2a-peers.yaml` after first push:
+**Update peer URLs** in each app's `a2a-peers.yaml` after first push (these files are gitignored — local overrides only):
 
 ```bash
-cf app agent-a2a-alpha   # get route
-cf app agent-a2a-beta    # get route
-# edit apps/agent-a2a-alpha/a2a-peers.yaml
-# edit apps/agent-a2a-beta/a2a-peers.yaml
+# Get your apps domain
+cf app agent-a2a-alpha | grep routes   # e.g. agent-a2a-alpha.apps.<your-domain>
+
+# Replace <CF_APPS_DOMAIN> with your actual apps domain in both files:
+#   apps/agent-a2a-alpha/a2a-peers.yaml
+#   apps/agent-a2a-beta/a2a-peers.yaml
+
 cf push -f manifest.yml
 ```
 

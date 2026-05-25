@@ -1,6 +1,6 @@
 # Peer agents reachable from agent-a2a-alpha.
-# Replace placeholder URLs with actual CF app routes after cf push.
-# The sidecar will POST to <url><A2A_PEER_PATH> (env A2A_PEER_PATH, default: /api/chat).
+# Replace <CF_APPS_DOMAIN> with your foundation's apps domain after cf push.
+# Run: cf app agent-a2a-beta | grep routes
 peers:
   - alias: beta
-    url: https://agent-a2a-beta.apps.tas02.ylhomelab.com
+    url: https://agent-a2a-beta.<CF_APPS_DOMAIN>
