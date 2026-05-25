@@ -1,6 +1,0 @@
-# Peer agents reachable from agent-a2a-alpha.
-# Replace <CF_APPS_DOMAIN> with your foundation's apps domain after cf push.
-# Run: cf app agent-a2a-beta | grep routes
-peers:
-  - alias: beta
-    url: https://agent-a2a-beta.<CF_APPS_DOMAIN>
