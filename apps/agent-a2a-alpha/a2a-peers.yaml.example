@@ -1,0 +1,5 @@
+# Copy to a2a-peers.yaml (gitignored) and set your apps domain after cf push.
+# cf app agent-a2a-beta | grep routes
+peers:
+  - alias: beta
+    url: https://agent-a2a-beta.apps.tp.penso.io

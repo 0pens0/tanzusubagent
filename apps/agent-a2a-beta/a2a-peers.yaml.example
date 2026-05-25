@@ -1,0 +1,7 @@
+# Copy to a2a-peers.yaml (gitignored) and set your apps domain after cf push.
+# Future: alias "tanzubot" -> orchestrator route when Tanzubot subagent wiring is live.
+peers:
+  - alias: alpha
+    url: https://agent-a2a-alpha.apps.tp.penso.io
+  - alias: tanzubot
+    url: https://tanzubot.apps.tp.penso.io
