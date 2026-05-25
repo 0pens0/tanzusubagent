@@ -1,3 +1,5 @@
+# Deploy to org demo, space tanzubot (same as production tanzubot).
+# Prerequisites in space: Qwen3.6, skill-runner-mcp-local (scripts/setup_mcp_binding.sh)
 applications:
 - name: tanzudispatcher
   path: apps/tanzudispatcher

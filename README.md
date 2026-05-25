@@ -1,40 +1,37 @@
 # tanzusubagent
 
-Fork of [cf-agent-a2a-skill-script](https://github.com/yannicklevederpvtl/cf-agent-a2a-skill-script) for the **Tanzubot A2A mesh** on Tanzu Platform Elastic Application Runtime.
+A2A **dispatcher** and **worker** agents for the [Tanzubot](https://github.com/0pens0/tanzubot) hub mesh on Tanzu Platform Elastic Application Runtime.
 
-Three-app pattern:
+Forked from [cf-agent-a2a-skill-script](https://github.com/yannicklevederpvtl/cf-agent-a2a-skill-script).
 
-| CF app | Role |
-| --- | --- |
-| **tanzubot** (production, [tanzubot repo](https://github.com/0pens0/tanzubot)) | User-facing PSE; MCP bindings; A2A to dispatcher and worker |
-| **tanzudispatcher** (this repo) | A2A router; forwards to tanzusubagent |
-| **tanzusubagent** (this repo) | Worker; SkillRunner scripts + optional MCP |
+## Apps in this repo
 
-```
-User -> tanzubot ->|direct|-> tanzusubagent
-              \-> tanzudispatcher -> tanzusubagent
-```
+| CF app | Path | Role |
+| --- | --- | --- |
+| `tanzudispatcher` | `apps/tanzudispatcher/` | Hub router; only peer of production `tanzubot` |
+| `tanzusubagent` | `apps/tanzusubagent/` | Worker (SkillRunner + skills) |
 
-Native A2A: `list_a2a_peers`, `call_a2a_peer`. SkillRunner sidecar on dispatcher and worker.
+Deploy together with **`tanzubot`** and **`tanzubot-mesh`** from the tanzubot repo into the **same CF space** (default `demo/tanzubot`).
 
-## Deploy (this repo only)
+Full architecture and deploy steps: **[tanzubot README](https://github.com/0pens0/tanzubot/blob/main/README.md)**.
+
+## Quick deploy
 
 ```bash
-bash scripts/setup_mcp_binding.sh
-bash scripts/sync_shared.sh
+cf target -o demo -s tanzubot
+bash scripts/setup_mcp_binding.sh    # once per space
 cp apps/tanzudispatcher/a2a-peers.yaml.example apps/tanzudispatcher/a2a-peers.yaml
 cp apps/tanzusubagent/a2a-peers.yaml.example apps/tanzusubagent/a2a-peers.yaml
 cf push -f manifest.yml
 ```
 
-Does **not** push production `tanzubot` (separate repo; `cf restage` after adding `a2a-peers.yaml`).
+From tanzubot repo (all four apps):
+
+```bash
+bash scripts/deploy_all.sh
+```
 
 ## Docs
 
 - [docs/USE_CASES_AND_SCENARIOS.md](docs/USE_CASES_AND_SCENARIOS.md)
 - [docs/ROADMAP.md](docs/ROADMAP.md)
-
-## Related
-
-- https://github.com/0pens0/tanzubot
-- https://github.com/0pens0/tanzusubagent

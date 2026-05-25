@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Deploy tanzudispatcher + tanzusubagent and restage production tanzubot (separate repo).
+# Deploy tanzudispatcher + tanzusubagent to demo/tanzubot (or CF_ORG / CF_SPACE).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ORG="${CF_ORG:-demo}"
 SPACE="${CF_SPACE:-tanzubot}"
-TANZUBOT_ROOT="${TANZUBOT_ROOT:-$(cd "${ROOT}/../tanzubot" && pwd)}"
+TANZUBOT_ROOT="${TANZUBOT_ROOT:-$(cd "${ROOT}/../tanzubot" 2>/dev/null && pwd || echo "")}"
 
+echo "Target: org ${ORG} space ${SPACE}"
 cf target -o "${ORG}" -s "${SPACE}"
 
 if [[ -d "${ROOT}/../cf-agent-skill-script/skill_runner" ]]; then
@@ -22,19 +23,25 @@ for app in tanzudispatcher tanzusubagent; do
   fi
 done
 
+echo "Pushing tanzudispatcher and tanzusubagent..."
 cf push -f "${ROOT}/manifest.yml"
 
-if [[ -f "${TANZUBOT_ROOT}/a2a-peers.yaml" ]] || [[ -f "${TANZUBOT_ROOT}/a2a-peers.yaml.example" ]]; then
+if [[ -n "${TANZUBOT_ROOT}" && -f "${TANZUBOT_ROOT}/manifest.yml" ]]; then
   if [[ ! -f "${TANZUBOT_ROOT}/a2a-peers.yaml" ]]; then
     cp "${TANZUBOT_ROOT}/a2a-peers.yaml.example" "${TANZUBOT_ROOT}/a2a-peers.yaml"
   fi
-  echo "restaging tanzubot from ${TANZUBOT_ROOT}"
-  cf push "${TANZUBOT_ROOT}" -f "${TANZUBOT_ROOT}/manifest.yml" || cf restage tanzubot
-else
-  echo "warn: tanzubot repo not found at ${TANZUBOT_ROOT}; skip tanzubot restage"
+  cp "${TANZUBOT_ROOT}/mesh-topology.yaml" "${TANZUBOT_ROOT}/mesh-app/mesh-topology.yaml" 2>/dev/null || true
+  echo "Pushing tanzubot + tanzubot-mesh from ${TANZUBOT_ROOT}..."
+  cf push -f "${TANZUBOT_ROOT}/manifest.yml"
 fi
 
-echo "done. verify routes:"
-cf app tanzubot | grep -E 'routes|name' || true
-cf app tanzudispatcher | grep routes || true
-cf app tanzusubagent | grep routes || true
+echo ""
+echo "done. Apps in ${ORG}/${SPACE}:"
+cf apps
+
+echo ""
+echo "Routes:"
+cf app tanzudispatcher 2>/dev/null | grep routes || true
+cf app tanzusubagent 2>/dev/null | grep routes || true
+cf app tanzubot 2>/dev/null | grep routes || true
+cf app tanzubot-mesh 2>/dev/null | grep routes || true
